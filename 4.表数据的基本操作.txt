@@ -1,0 +1,435 @@
+表数据的基本操作
+
+	1.增加数据：
+		1.1 全列数据的插入 （一下以：id name gender这些列为例子）
+			insert into [表的名称] values(列名称对应的值1，列名称对应的值2，列名称对应的值3...);
+			（注意：插入值的时候，需要按照列名称的先后顺序来插入）
+			
+			例子:insert into Student values(1,'jia','男');
+			插入id为1 name为jia gender为男的数据
+		
+		1.2 指定列的数据插入
+			insert into [表的名称] (指定列的名称) values (数据);
+			
+			例子：insert into student (id) values (3);
+			只在id列插入了一个3 而name gender均为null(name gender的属性允许其为空)
+			
+	2.查询：
+		1.全列查询:
+			select* from [表名称];
+			
+			例子：select* from student;
+			查询student表的所有字段
+			
+	    2.指定列查询：
+			select [列名称],[列名称2]...from [表名称];
+			
+			例子：select id,_name from student;
+			只查询了student中的id和name字段
+			
+		3.表达式写了student当中列名称之间可以运算 或者其他名称 也是可以显示出来的
+			select [列名称1],[列名称2],[列名称1]+[列名称2][别名]...from [表名称];
+			
+			例子：(1) select id,_name,10 from student;
+				10并不在student字段中，但是其会显示一列10
+				
+				  (2) select id,_name,id+gender ig from student;
+				 会多显示一列id+gender结果 ,并给其命名为ig（若不命名其名字为id+gender）
+				 
+			**（这样的运算及显示不会修改原表中的数据）
+			
+		4.查询结果去重
+			select distinct [指定列] from [表名称];
+			
+	  **5.where 条件	
+		
+			加上where表达式 进行更精确的查询
+		
+		5.1比较运算符：
+			>,>=,<,<=
+			<=>        等于
+			!=  <>     不等于
+			BETWEEN a0 AND a1  范围匹配,[a0,a1],如果a0 <= value <= a1 返回TRUE(1)
+			IS NULL      是NULL
+			IS NOT NULL 不是NULL
+			LIKE 模糊匹配。%表示任意多个(包括0个)任意字符;  _表示任意一个字符
+		
+		5.2逻辑运算符：
+			AND   与
+			OR    或
+			NOT   非
+			
+			例子:
+				//查询英语称级小于60的学生
+			SELECT name,yingyu FROM exem_result WHERE yingyu<60;
+			
+			+-----------+--------+ 
+			  name      | yingyu | 
+			+-----------+--------+ 
+			| jia       |     56 | 
+			| xiao      |     45 | 
+			| ji        |     30 | 
+			+-----------+--------+ 
+			3 rows in set (0.01 sec)
+			
+			  //查询名字带j的同学
+			  
+			  SELECT name FROM exam_result WHERE name LIKE 'j%';
+				
+			+-----------+--------+ 
+			  name      | yingyu | 
+			+-----------+--------+ 
+			| jia       |     56 | 
+			| ji        |     30 | 
+			+-----------+--------+ 
+		
+			SELECT name FROM exam_result WHERE name LIKE 'j_';
+			
+			+-----------+--------+ 
+			  name      | yingyu | 
+			+-----------+--------+ 
+			| ji        |     30 | 
+			+-----------+--------+ 
+			
+			
+		6.结果排序：
+		SELECT [目标列] FROM [表名] [WHERE ...] ORDER BY [目标列] [ASC|DESC], [...];
+			ASC 为升序
+			DESC 为降序
+			默认为升序 ASC
+			
+			例子：	
+				// 同学及数学成绩，按英语成绩降序显示
+				SELECT name, yingyu FROM exam_result ORDER BY yingyu DESC;
+			+-----------+--------+ 
+			  name      | yingyu | 
+			+-----------+--------+ 
+			| jia       |     56 | 
+			| xiao      |     45 | 
+			| ji        |     30 | 
+			+-----------+--------+ 
+			
+			    升序：SELECT name, yingyu FROM exam_result ORDER BY yingyu ;
+					（升序是默认的）
+					（NULL视为比任何值都小）
+					
+			// 查询姓j的同学或者x的同学英语成绩，结果按英语成绩由高到低显示
+			
+			SELECT name, yingyu FROM exam_result
+			WHERE name LIKE 'j%' OR name LIKE 'x%' 
+			ORDER BY yingyu DESC;
+			
+			+-----------+--------+ 
+			  name      | yingyu | 
+			+-----------+--------+ 
+			| jia       |     56 | 
+			| xiao      |     45 | 
+			| ji        |     30 | 
+			+-----------+--------+ 
+			
+			6.1筛选分页结果
+				-- 起始下标为 0 
+			
+				-- 从 s 开始，筛选 n 条结果，比第二种用法更明确，建议使用
+				SELECT ... FROM table_name [WHERE ...] [ORDER BY ...] LIMIT n OFFSET n;
+				
+		例子:
+			查询三行 按照id的升序 从第0行开始（结合order by是为了每次输出的行有一定的顺序）
+MariaDB [linux66]> select* from exam_result
+    -> order by id limit 3 offset 0;
++----+-----------+-------+--------+--------+
+| id | name      | yuwen | shuxue | yingyu |
++----+-----------+-------+--------+--------+
+|  1 | 唐三藏    |    67 |     98 |     56 |
+|  2 | 孙悟空    |    87 |     78 |     77 |
+|  3 | 猪悟能    |    88 |     98 |     90 |
++----+-----------+-------+--------+--------+
+	
+		查询三行 按照id的升序 从第3行开始
+		
+MariaDB [linux66]> select* from exam_result
+				order by id limit 3 offset 3;
++----+-----------+-------+--------+--------+
+| id | name      | yuwen | shuxue | yingyu |
++----+-----------+-------+--------+--------+
+|  4 | 曹孟德    |    82 |     84 |     67 |
+|  5 | 刘玄德    |    55 |     85 |     45 |
+|  6 | 孙权      |    70 |     73 |     78 |
++----+-----------+-------+--------+--------+
+
+	7.更新  update
+		语法:
+			UPDATE table_name SET column = expr [, column = expr ...] 
+			[WHERE ...] [ORDER BY ...] [LIMIT ...]
+				
+		
+		例子:  
+			查看原始数据中孙悟空的数学成绩
+MariaDB [linux66]> select name,shuxue from exam_result where name like '孙悟空';
++-----------+--------+
+| name      | shuxue |
++-----------+--------+
+| 孙悟空    |     78 |
++-----------+--------+
+
+
+			对查询到的结果进行列值更新 将孙悟空的数学成绩改为80
+	MariaDB [linux66]> update exam_result set shuxue = 80 where name <=> '孙悟空';
+	Query OK, 1 row affected (0.40 sec)
+    Rows matched: 1  Changed: 1  Warnings: 0
+	
+	此时进行查看：
+MariaDB [linux66]>  select name,shuxue from exam_result where name like '孙悟空';
++-----------+--------+
+| name      | shuxue |
++-----------+--------+
+| 孙悟空    |     80 |
++-----------+--------+
+
+	已经修改成功
+	
+	例子：将总成绩倒数前三的同学的数学成绩加上30分
+	
+	先查看原始：
+		
+MariaDB [linux66]> select name,shuxue,yuwen+shuxue+yingyu 总分 from exam_result 
+order by 总分 limit 3 offset 0;
++-----------+--------+--------+
+| name      | shuxue | 总分   |
++-----------+--------+--------+
+| 宋公明    |     65 |    170 |
+| 刘玄德    |     85 |    185 |
+| 唐三藏    |     98 |    221 |
++-----------+--------+--------+
+
+    修改
+MariaDB [linux66]> update exam_result set shuxue = shuxue +30   
+order by yuwen+shuxue+yingyu limit 3;
+
+Query OK, 3 rows affected (0.00 sec)
+Rows matched: 3  Changed: 3  Warnings: 0
+
+查看修改后的：注意 此时总分已经发生改变，我们应直接查询刚才那倒三的人名
+
+MariaDB [linux66]> select name,shuxue,yuwen+shuxue+yingyu 总分 from exam_result
+ where name IN('宋公明','刘玄德','唐三藏');
++-----------+--------+--------+
+| name      | shuxue | 总分   |
++-----------+--------+--------+
+| 唐三藏    |    128 |    251 |
+| 刘玄德    |    115 |    215 |
+| 宋公明    |     95 |    200 |
++-----------+--------+--------+
+
+	8.删除  delete
+	语法：
+		DELETE FROM table_name [WHERE ...] [ORDER BY ...] [LIMIT ...]
+		
+		例子：删除孙悟空的考试成绩
+		
+		先查看原始：
+MariaDB [linux66]> select* from exam_result where name <=> '孙悟空';
++----+-----------+-------+--------+--------+
+| id | name      | yuwen | shuxue | yingyu |
++----+-----------+-------+--------+--------+
+|  2 | 孙悟空    |    87 |     80 |     77 |
++----+-----------+-------+--------+--------+
+
+删除：
+MariaDB [linux66]> delete from exam_result where name <=> '孙悟空';
+Query OK, 1 row affected (0.00 sec)
+
+查看:
+MariaDB [linux66]> select* from exam_result where name <=> '孙悟空';
+Empty set (0.00 sec)
+
+
+		删除整张表的数据：  (慎用 这里就不测试了...)
+			delete from  exam_result;
+	
+***当再进行插入时，属性为自增的列，依然会延续之前的自增值！
+
+	9.截断 TRUNCATE
+	
+	语法:TRUNCATE [TABLE] table_name;
+	1.只能整表操作
+	2.会重置auto_increment项
+	
+
+**聚合函数：
+	count([DISTINCT] expr)  返回查询到的数据的数量
+	sum ([DISTINCT] expr)   返回查询到的数据的总和，不是数字没有意义
+	avg  ([DISTINCT] expr)  返回查询到的数据的平均值，不是数字没意义
+	max	  ([DISTINCT] expr) 返回查询到的数据的最大值，不是数字没意义
+	min   ([DISTINCT] expr) 返回查询到的数据的最小值，不是数字没意义
+	
+	例子: 统计全班同学个数
+	
+MariaDB [linux66]> select count(*) from exam_result;
++----------+
+| count(*) |
++----------+
+|        6 |
++----------+
+
+（*可以将其写为 cout(id)） 则查询出来的表名即count(id)  查询一共有多少个id
+
+查看一下全表:
+	MariaDB [linux66]> select* from exam_result;
++----+-----------+-------+--------+--------+
+| id | name      | yuwen | shuxue | yingyu |
++----+-----------+-------+--------+--------+
+|  1 | 唐三藏    |    67 |    128 |     56 |
+|  3 | 猪悟能    |    88 |     98 |     90 |
+|  4 | 曹孟德    |    82 |     98 |     67 |
+|  5 | 刘玄德    |    55 |    115 |     45 |
+|  6 | 孙权      |    70 |     73 |     78 |
+|  7 | 宋公明    |    75 |     95 |     30 |
++----+-----------+-------+--------+--------+
+6 rows in set (0.00 sec)
+
+发现数学成绩有重复
+
+	统计去重后的数学成绩数量
+MariaDB [linux66]> select count(distinct shuxue) from exam_result;
++------------------------+
+| count(distinct shuxue) |
++------------------------+
+|                      5 |
++------------------------+
+
+	统计语文成绩小于70的个数
+	
+MariaDB [linux66]> select count(yuwen) from exam_result where yuwen < 70;
++--------------+
+| count(yuwen) |
++--------------+
+|            2 |
++--------------+
+
+	统计平均总分
+	
+MariaDB [linux66]> select avg(yuwen+shuxue+yingyu) 平均总分 from exam_result;
++--------------+
+| 平均总分     |
++--------------+
+|          235 |
++--------------+
+
+	返回英语最高分
+MariaDB [linux66]> select max(yingyu) from exam_result;
++-------------+
+| max(yingyu) |
++-------------+
+|          90 |
++-------------+
+
+	返回大于70分以上的语文最低成绩
+
+MariaDB [linux66]> select min(yuwen) from exam_result where yuwen > 70;
++------------+
+| min(yuwen) |
++------------+
+|         75 |
++------------+
+
+
+
+**group by子句的使用
+
+再select中使用group子句可以对指定列进行分组查询
+	语法：select column1, column2, .. from table group by column;
+	
+例子：
+		在数据库中创建了一个雇员信息表
+			*EMP员工表
+			*DEPT部门表
+			*SALGRADE工资等级表
+
+//查看emp员工表
+MariaDB [scott]> desc emp;
++----------+--------------------------+------+-----+---------+-------+
+| Field    | Type                     | Null | Key | Default | Extra |
++----------+--------------------------+------+-----+---------+-------+
+| empno    | int(6) unsigned zerofill | NO   |     | NULL    |       |---雇员编号
+| ename    | varchar(10)              | YES  |     | NULL    |       |---雇员姓名
+| job      | varchar(9)               | YES  |     | NULL    |       |---雇员值位
+| mgr      | int(4) unsigned zerofill | YES  |     | NULL    |       |---雇员领导编号
+| hiredate | datetime                 | YES  |     | NULL    |       |---雇佣时间
+| sal      | decimal(7,2)             | YES  |     | NULL    |       |---月薪
+| comm     | decimal(7,2)             | YES  |     | NULL    |       |---奖金
+| deptno   | int(2) unsigned zerofill | YES  |     | NULL    |       |---部门编号
++----------+--------------------------+------+-----+---------+-------+
+
+
+//查看dept部门表中的数据类型
+MariaDB [scott]> desc dept;
++--------+--------------------------+------+-----+---------+-------+
+| Field  | Type                     | Null | Key | Default | Extra |
++--------+--------------------------+------+-----+---------+-------+
+| deptno | int(2) unsigned zerofill | NO   |     | NULL    |       |---部门编号
+| dname  | varchar(14)              | YES  |     | NULL    |       |---部门名称
+| loc    | varchar(13)              | YES  |     | NULL    |       |---部门所在地
++--------+--------------------------+------+-----+---------+-------+
+
+//查看salgrade工资等级表
+MariaDB [scott]> desc salgrade;
++-------+---------+------+-----+---------+-------+
+| Field | Type    | Null | Key | Default | Extra |
++-------+---------+------+-----+---------+-------+
+| grade | int(11) | YES  |     | NULL    |       |---等级
+| losal | int(11) | YES  |     | NULL    |       |---此等级最低工资
+| hisal | int(11) | YES  |     | NULL    |       |---此等级最高工资
++-------+---------+------+-----+---------+-------+
+
+------------------------------------------------------------------------------------------------------------
+基于上述数据库进行的操作练习：
+		
+1.显示每个部门的平均工资和最高工资
+MariaDB [scott]> select deptno,avg(sal),max(sal) from emp group by deptno;
++--------+-------------+----------+
+| deptno | avg(sal)    | max(sal) |
++--------+-------------+----------+
+|     10 | 2916.666667 |  5000.00 |
+|     20 | 2175.000000 |  3000.00 |
+|     30 | 1566.666667 |  2850.00 |
++--------+-------------+----------+
+
+2.显示每个部门的每种岗位的平均工资和最低工资
+MariaDB [scott]> select deptno,job,avg(sal),min(sal) from emp group by deptno,job;
++--------+-----------+-------------+----------+
+| deptno | job       | avg(sal)    | min(sal) |
++--------+-----------+-------------+----------+
+|     10 | CLERK     | 1300.000000 |  1300.00 |
+|     10 | MANAGER   | 2450.000000 |  2450.00 |
+|     10 | PRESIDENT | 5000.000000 |  5000.00 |
+|     20 | ANALYST   | 3000.000000 |  3000.00 |
+|     20 | CLERK     |  950.000000 |   800.00 |
+|     20 | MANAGER   | 2975.000000 |  2975.00 |
+|     30 | CLERK     |  950.000000 |   950.00 |
+|     30 | MANAGER   | 2850.000000 |  2850.00 |
+|     30 | SALESMAN  | 1400.000000 |  1250.00 |
++--------+-----------+-------------+----------+
+
+3.显示平均工资低于2000的部门和它的平均工资
+
+*先统计各个部门的平均工资
+MariaDB [scott]> select deptno,avg(sal) from emp group by deptno;
++--------+-------------+
+| deptno | avg(sal)    |
++--------+-------------+
+|     10 | 2916.666667 |
+|     20 | 2175.000000 |
+|     30 | 1566.666667 |
++--------+-------------+
+
+*having和group by配合使用，对group by进行过滤
+MariaDB [scott]> select deptno,avg(sal) _avg  from emp group by deptno having(_avg<2000);
++--------+-------------+
+| deptno | myavg       |
++--------+-------------+
+|     30 | 1566.666667 |
++--------+-------------+
+
+
+	
