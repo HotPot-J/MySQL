@@ -1,0 +1,297 @@
+
+**表的约束，更好的保证数据的合法性，从业务逻辑保证数据的正确性
+
+1.空属性：
+	*两个值：null(默认)  not null(不为空)
+	
+	*数据库默认字段基本都是字段为空，但是实际开发时，尽可能保证字段不为空，因为数据为空
+ 没办法参与运算。
+ 
+2.默认值 (default)
+	某一种数据经常性的出现某个具体的值，可以在一开始就制定好，在需要真实数据的时候，用户可
+	以选择性的使用默认值。
+	
+3.列描述
+	comment，没有实际含义，专门用来表述字段(个人理解就是注释吧)
+	
+	desc看不见注释，show可以看到
+	
+--------------------------------------------------------------------------------------------
+例子：
+MariaDB [jxy]> create table t2(
+name varchar(10) NOT NULL comment'姓名',
+age tinyint unsigned default 0 comment '年龄',
+sex char(2) default '男' comment '性别'
+);
+
+MariaDB [jxy]> desc t2;
++-------+---------------------+------+-----+---------+-------+
+| Field | Type                | Null | Key | Default | Extra |
++-------+---------------------+------+-----+---------+-------+
+| name  | varchar(10)         | NO   |     | NULL    |       |
+| age   | tinyint(3) unsigned | YES  |     | 0       |       |
+| sex   | char(2)             | YES  |     | 男      |       |
++-------+---------------------+------+-----+---------+-------+
+
+
+MariaDB [jxy]> show create table t2\G;
+*************************** 1. row ***************************
+       Table: t2
+Create Table: CREATE TABLE `t2` (
+  `name` varchar(10) NOT NULL COMMENT '姓名',
+  `age` tinyint(3) unsigned DEFAULT '0' COMMENT '年龄',
+  `sex` char(2) DEFAULT '男' COMMENT '性别'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8
+
+
+
+
+MariaDB [jxy]> insert into t2(age,sex) values(10,'女');
+ERROR 1364 (HY000): Field 'name' doesn't have a default value
+
+MariaDB [jxy]> insert into t2(name,age) values('小贾',10);
+Query OK, 1 row affected (0.00 sec)
+
+MariaDB [jxy]> select* from t2;
++--------+------+------+
+| name   | age  | sex  |
++--------+------+------+
+| 小贾   |   10 | 男   |
++--------+------+------+
+
+通过上述操作结果可以看出，再插入数据时name不能为空，年龄默认为0，性别默认为男。
+
+
+--------------------------------------------------------------------------------------------
+4.zerofill
+	指定列数值的宽度，如果指定了，默认该列会加上无符号属性;数据在数据库当中存储的时候还是
+	原本的值，而查询的时候会按照宽度进行输出，宽度不够，会在数值前面补0;
+	
+	（相当于格式化输出）
+	
+5.主键
+	primary key
+	1.不是重新开辟了一列，而是一列被设置的属性。
+	2.主键属性保证该列当中的数据，不能重复，不能为空。
+	3.一张表中只能有一个主键，一个主键可以有多列，至少一列
+	4.主键通常都是整型类型
+	5.在表中设置主键的时候，该列的数值可以唯一代表该列，则满足该列为主键的要求
+	
+例子：
+
+//设置主键为num	
+MariaDB [jxy]> create table t3(num int primary key comment '学号不能为空',name varchar(20));
+Query OK, 0 rows affected (0.00 sec)
+
+MariaDB [jxy]> desc t3;
++-------+-------------+------+-----+---------+-------+
+| Field | Type        | Null | Key | Default | Extra |
++-------+-------------+------+-----+---------+-------+
+| num   | int(11)     | NO   | PRI | NULL    |       |
+| name  | varchar(20) | YES  |     | NULL    |       |
++-------+-------------+------+-----+---------+-------+
+
+
+//验证主键不能为空
+MariaDB [jxy]> insert into  t3(name) values('jia');
+ERROR 1364 (HY000): Field 'num' doesn't have a default value
+
+//验证主键不能重复
+MariaDB [jxy]> insert into  t3  values(1,'jia');
+Query OK, 1 row affected (0.00 sec)
+
+MariaDB [jxy]> insert into  t3  values(1,'xixi');
+ERROR 1062 (23000): Duplicate entry '1' for key 'PRIMARY'
+
+	5.1 复合主键
+			指定多个列为主键
+			
+		例子:
+			//设置useid与classid为主键
+MariaDB [jxy]> create table t5(userid int,classid int,primary key(userid,classid));
+Query OK, 0 rows affected (0.00 sec)
+
+MariaDB [jxy]> desc t5;
++---------+---------+------+-----+---------+-------+
+| Field   | Type    | Null | Key | Default | Extra |
++---------+---------+------+-----+---------+-------+
+| userid  | int(11) | NO   | PRI | 0       |       |
+| classid | int(11) | NO   | PRI | 0       |       |
++---------+---------+------+-----+---------+-------+
+
+		//删除表的主键
+MariaDB [jxy]> alter table t5  drop primary key;
+Query OK, 0 rows affected (0.11 sec)               
+Records: 0  Duplicates: 0  Warnings: 0
+
+MariaDB [jxy]> desc t5;
++---------+---------+------+-----+---------+-------+
+| Field   | Type    | Null | Key | Default | Extra |
++---------+---------+------+-----+---------+-------+
+| userid  | int(11) | NO   |     | 0       |       |
+| classid | int(11) | NO   |     | 0       |       |
++---------+---------+------+-----+---------+-------+
+
+		//添加主键
+MariaDB [jxy]> alter table t5 add primary key (userid);
+Query OK, 0 rows affected (0.38 sec)
+Records: 0  Duplicates: 0  Warnings: 0
+
+MariaDB [jxy]> desc t5;
++---------+---------+------+-----+---------+-------+
+| Field   | Type    | Null | Key | Default | Extra |
++---------+---------+------+-----+---------+-------+
+| userid  | int(11) | NO   | PRI | 0       |       |
+| classid | int(11) | NO   |     | 0       |       |
++---------+---------+------+-----+---------+-------+
+
+6.自增长
+	auto_increment
+	1.配合主键使用，让主键完成自增长功能;如果再插入数据的时候，没有给主键的值，则采用自增长的
+	值;
+	2.字段必须是一个整数
+	3.一张表中最多只能有一个自增长
+	
+//创建t6 设置其中的userid为主键，并添加自增长约束
+	
+MariaDB [jxy]> create table t6(userid int primary key auto_increment,classid int); 
+Query OK, 0 rows affected (0.01 sec)
+
+MariaDB [jxy]> desc t6;
++---------+---------+------+-----+---------+----------------+
+| Field   | Type    | Null | Key | Default | Extra          |
++---------+---------+------+-----+---------+----------------+
+| userid  | int(11) | NO   | PRI | NULL    | auto_increment |
+| classid | int(11) | YES  |     | NULL    |                |
++---------+---------+------+-----+---------+----------------+
+
+
+//验证t6的自增长属性
+MariaDB [jxy]> insert into  t6(classid) values(1);
+Query OK, 1 row affected (0.00 sec)
+
+MariaDB [jxy]> insert into  t6(classid) values(2);
+Query OK, 1 row affected (0.00 sec)
+
+MariaDB [jxy]> select* from t6;
++--------+---------+
+| userid | classid |
++--------+---------+
+|      1 |       1 |
+|      2 |       2 |
++--------+---------+
+
+MariaDB [jxy]> show create table t6\G
+*************************** 1. row ***************************
+       Table: t6
+Create Table: CREATE TABLE `t6` (
+  `userid` int(11) NOT NULL AUTO_INCREMENT,
+  `classid` int(11) DEFAULT NULL,
+  PRIMARY KEY (`userid`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8
+
+其中 AUTO_INCREMENT=3 记录下一个自增长的主键的值
+
+6.1 last_insert_id()
+	可以返回上一次自增长的值为多少,并且如果手动插入自增长的值，该函数是获取不到的，获取的还是
+    自己自增长的值。
+	如果是批量插入，则返回插入获取的第一个值。
+	
+	例子：
+//查到上一个自增长的值
+MariaDB [jxy]> select last_insert_id();
++------------------+
+| last_insert_id() |
++------------------+
+|                2 |
++------------------+
+
+//验证自己手动插入自增的值获取不到
+
+//先自己手动插入一个3
+MariaDB [jxy]> insert into  t6  values(3,3);
+Query OK, 1 row affected (0.00 sec)
+
+MariaDB [jxy]> select last_insert_id();
++------------------+
+| last_insert_id() |
++------------------+
+|                2 |
++------------------+
+
+
+//非手动插入以后 该函数获取到的是上一个自增值 
+
+MariaDB [jxy]> insert into  t6(classid)  values(4);
+Query OK, 1 row affected (0.00 sec)
+
+MariaDB [jxy]> insert into  t6(classid)  values(5);
+Query OK, 1 row affected (0.00 sec)
+
+MariaDB [jxy]> select last_insert_id();
++------------------+
+| last_insert_id() |
++------------------+
+|                5 |
++------------------+
+1 row in set (0.00 sec)
+
+//进行批量插入
+
+MariaDB [jxy]> insert into  t6(classid)  values(6),(7),(8),(9);
+
+MariaDB [jxy]> select last_insert_id();
++------------------+
+| last_insert_id() |
++------------------+
+|                6 |
++------------------+
+//获得的是 插入获取的第一个值。
+
+MariaDB [jxy]> show create table t6\G
+*************************** 1. row ***************************
+       Table: t6
+Create Table: CREATE TABLE `t6` (
+  `userid` int(11) NOT NULL AUTO_INCREMENT,
+  `classid` int(11) DEFAULT NULL,
+  PRIMARY KEY (`userid`)
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8
+1 row in set (0.00 sec)
+//此时AUTO_INCREMENT=10 即下一个自增值为10
+
+
+7. 唯一键
+	unique
+	一张表中有往往有很多字段需要唯一性，数据不能重复，但是一张表中只能有一个主键：唯一键就
+	可以解决表中有多个字段需要唯一性约束的问题。
+     唯一键的本质和主键差不多，唯一键允许为空，而且可以多个为空，空字段不做唯一性比较。
+
+
+8.外键
+	定义了主表和从表的关系
+		主表：存放基础属性的表
+			主表当中被其他从表认为是外键的列，必须有主键约束或者唯一键约束(数据不能重复)
+			
+		从表：存放具体的信息
+			从表当中定义外键，这个外键是主表的主键或者唯一键
+			
+		foreign key (字段名) references 主表(列)
+
+例子：
+ 
+ //	先创建主键表
+	create table myclass(
+	id int primary key,
+	name varchar(30) not null comment'班级名'
+	);
+ 
+ // 再创建从表
+create table stu( 
+  id int primary key,
+  name varchar(30) not null comment '学生名',
+  class_id int,
+  foreign key (class_id) references myclass(id) 
+  );
+  
+  主表的主键：id
+  从表的外键：class_id 其对应主表中的主键 id
