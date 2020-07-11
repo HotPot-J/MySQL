@@ -1,0 +1,229 @@
+什么是数据库?
+	由于文件保存数据有如下缺点:
+		文件的安全性问题 
+		文件不利于数据的查询和管理
+		文件不利于存储海量数据
+		文件在程序中控制不方便
+	所以数据库应运而生
+		数据库更加有利于管理数据，且高效
+	数据库存储介质:
+		磁盘
+		内存
+		
+	MySQL：世界上最受欢迎的数据库，属于甲骨文，并发性好，不适合做复杂业务，主要用在电商、SNS、论坛
+		   对简单的SQL处理效果好
+		   
+Linux下
+	1.查看本地是否安装了mariadb（MariaDB数据库管理系统是MySQL的一个分支，主要由开源社区在维护，MariaDB的目的是完全兼容MySQL，
+								包括API和命令行，使之能轻松成为MySQL的代替品。）
+								
+		rpm -qa|grep mariadb
+		
+	2.查看mariadb的状态
+		service mariadb status
+		如果是active(running)说明已经启动
+		
+		若未启动（inactive）则执行该命令启动：service mariadb start
+			执行启动命令 可以使用 ps aux | grep mysqld 查看是否已经启动成功
+					mysqld--守护进程 
+							先启动守护进程，拉起来mysql的服务端，如果在使用过程中服务端挂掉了，
+							守护进程会重新拉起来mysql的服务端
+			
+		关闭mariadb：service mariadb stop
+		
+	3. mysql的侦听端口是3306
+	
+	5.客户端登录
+		1.免密码登录（这样为了先进去设置自己的密码）：
+		vim /etc/my.cnf 进入该配置文件 
+			添加： skip-grant-tables  	保存退出后重启一下mariadb
+			然后执行：mysql -u root 进行登录
+			登陆进去后修改密码：
+				执行： use mysql; 
+				执行：update user set password=password('111111') where user='root' and host='localhost';
+				（111111）即为修改的密码
+				执行：flush privileges; 然后执行：quit 退出mysql
+				再去刚才的配置文件中 注释掉添加的那一行代码 保存并退出 
+				重启我们的数据库  此时再使用mysql -u root 进行登录就不行啦
+				
+		2.有密码登录：mysql -u root -p111111 
+		
+mysql的原理:
+
+客户端和服务端都是一个程序
+	数据库:相当于服务器管理的文件夹，而数据库表相当于文件夹下的文件
+	查看当前mysql中的数据库：show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
+|                    |
++--------------------+
+以上均为系统数据库 （即相当于服务器管理的文件夹）
+				
+服务端的分层：
+	1.连接层：
+		1.用户验证
+		2.选择连接的协议
+			针对*本地*的MySQL客户端，不走网络协议栈，而是通过域套接字来完成客户端和服务端的进程间通信
+				域套接字:在机器当中创建一个文件，客户端和服务端通过文件进行通信
+			针对*远端*客户端： 走网络协议即可（TCP）
+		3.创建线程对客户端进行服务
+	
+	2.server层：
+		1.检查SQL语句的语法
+		2.语义分析 （是否符合语义规范）
+		3.权限检查--当前的用户是否有操作该表的权限
+		4.分析SQL语句的查找方案，选出一个执行效率最高的方案
+		5.执行sql  使用存储引擎执行	
+		
+		
+		*存储引擎：数据库管理系统如何存储数据、如何为存储的数据建立索引和如何更新、查询数据等技术的实现方法
+				相当于Linux操作系统的文件系统 
+				不同的存储引擎，可以决定数据的存储方式（在磁盘中拿数据）
+			查看当前操作系统支持哪些存储引擎： show engines;
+
+基本操作：
+
+切换数据库 ：use [数据库名称]
+
+查看当前数据库当中的数据表: show tables;
+
+sql语句：结构化的查询语句
+	DDL：数据库定义语言
+	DCL：数据库操作语言
+	DML：数据库修改语言
+	
+	
+	字符集:
+			比如:ASCII字符集：采用的是1个字节的低7位表示字符，高位始终为0
+				 latin1字符集: 相对于ASCII字符集做了一个扩展，启用了最高位
+				 GBK字符集：支持文，字符可以使用一个字节，也可以使用两个字节
+				 utf8字符集：Uniclde字符集之一（可以表示很多语言），支持了所有
+							国家的文字字符，采用的是1到4字节来表示字符
+			（乱发的来源就来自于 前后端字符集不匹配
+				注意：在设计数据库字符集之初，就要考虑到浏览器，mysql客户端(集成在服务端的代码
+				中)，mysql服务端编码格式设置成一样，防止乱码的产生；
+			）
+	
+	较对规则：
+
+		影响用户对对数据查询的排序；
+		有些较对规则对大小写敏感:名称后缀为_cs
+		有些不敏感:名称后缀为_ci
+	
+		mysql当中 都是大小写不敏感的
+			查看支持哪些较对规则: show collation;
+		
+		较对规则的特征:
+			1.不同的字符集有不同的较对规则
+			2.每一个字符集有一个默认的较对规则
+		
+		utf8的默认校对规则为：utf8_general_ci
+	
+	
+	对于库的操作：
+		1.创建库
+			create database [库名称];  (该方式采用默认字符集)
+			create database [库名称] charset=[字符集];  （自定义字符集）
+				show charset;(查看数据库支持的字符集)
+	
+		  查看如何创建的库
+			show create database [库名称]; //该指令可以看见当前数据库采用的字符集
+			
+		2.删除数据库 
+			drop database [库名称]   （三思而行）
+		
+		3.数据库的备份
+			mysqldump -P[端口] -u [用户] -p[密码] -B [数据库名称1,2...] > 数据库备份存储的文件路径;
+				
+			备份时，如果没有使用-B参数 在恢复时 则需要先创建一个空数据库，再使用source来还原
+			（定期备份一次数据库 良好习惯）
+			
+		4.表备份
+			mysqldump -u [用户] -p[密码] 数据库名称 表名称1 表名称2... > 数据表备份存储的文件路径;
+		
+		5.还原
+		    备份完了 若删除了库 则可以用如下命令恢复该库：
+			source 数据库备份存储的文件路径;
+		
+		
+	对表的操作：
+		
+		1.创建表
+		CREATE TABLE table_name (
+		field1 datatype, 
+		field2 datatype,
+		field3 datatype, 
+		...
+		) character set 字符集 collate 校验规则 engine 存储引擎;
+		
+		*field 表示列名
+        *datatype 表示列的类型
+        *character set 字符集，如果没有指定字符集，则以所在数据库的字符集为准
+        *collate 校验规则，如果没有指定校验规则，则以所在数据库的校验规则为准
+		
+		例子：
+		
+		create table users ( 
+		id int, name varchar(20) comment '用户名', 
+		password char(32) comment '密码是32位的md5值', 
+		birthday date comment '生日' 
+		) character set utf8 engine MyISAM;
+		
+		不同的存储引擎，创建表的文件不一样。
+        users表存储引擎是 MyISAM ，在数据目中有三个不同的文件，分别是：
+        users.frm：表结构 
+        users.MYD：表数据
+        users.MYI：表索引
+		
+		2.查看表字段或表结构
+		
+		*查看表结构：
+		desc [表名称];
+		
+		*查看如何创建的表：
+		show create table [表名称];
+		
+		3.修改表字段
+			3.1新增表字段 （列）
+				alter table [表名称] add[列名称] [字段的类型的值] after [列名称（相当于在这一列后边进行添加）] 
+			
+				例子： alter table users add assets varchar(100) comment '图片路径' after birthday;
+			
+			（新增表字段并不会影响之前的数据，只不过之前的表数据对应的新增列表的值为空）
+			
+			3.2修改表字段属性 （列）
+				alter table [表名称] modify [列名称] [修改后的值]
+				
+				例子：alter table student modify name char(10);
+					修改name的类型为char(10)
+					
+			3.3删除表字段（列）
+				alter table [表名称] drop [列名称];
+				
+				例子：alter table student drop age;
+					删除了age表 
+				
+				（删除某列，则对应列的数据也就随之删除了）
+
+				
+			3.4修改列名称 （列）
+				alter table [表名称] change [待修改字段名称] [修改完成后的字段名称][修改完成后的属性];
+					
+				例子：alter table Student change name _name char(30);
+					  将表Student中的name字段改为 _name 并且将该字段属性设置为char(30)
+					  
+				（修改字段（列）名称 要完整的重新定义 包括其属性）
+				
+		    3.5修改表名 （表）
+				alter table [待重命名的表的名称] rename [重命名之后的名称];
+
+				例子:alter table student rename Student;
+					将表student 改成 Student				
+				
+			3.6删除表 (表)
+				drop table [表名称];
+				
