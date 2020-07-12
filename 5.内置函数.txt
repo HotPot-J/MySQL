@@ -1,0 +1,411 @@
+
+一.日期函数
+
+current_date() 当前日期
+
+current_time() 当前时间
+
+current_timestamp() 当前时间戳
+
+date(datetime) 返回datetime参数的日期部分
+
+date_add(date,interval d_value_type) 在date中添加日期或者时间
+interval后的数值单位可以是：year minute second day
+
+date_sub(date,interval d_value_type) 在date中减去日期或时间
+interval后的数值单位可以是:year minute second day
+
+datediff(date1,date2) 两个日期的差，单位是天
+
+now()  当前日期时间
+
+**测试：	
+	
+1.获得年月日：
+MariaDB [scott]> select current_date();
++----------------+
+| current_date() |
++----------------+
+| 2020-07-11     |
++----------------+
+
+2.获得时分秒
+MariaDB [scott]> select current_time();
++----------------+
+| current_time() |
++----------------+
+| 11:22:19       |
++----------------+
+
+3.获得时间戳
+MariaDB [scott]> select current_timestamp();
++---------------------+
+| current_timestamp() |
++---------------------+
+| 2020-07-11 11:22:59 |
++---------------------+
+
+4.在日期的基础上加上日期 再过7天是几号
+MariaDB [scott]> select date_add('2020-7-11',interval 7 day);
++--------------------------------------+
+| date_add('2020-7-11',interval 7 day) |
++--------------------------------------+
+| 2020-07-18                           |
++--------------------------------------+
+
+5.1440分钟（24小时）之前是几号
+MariaDB [scott]> select date_sub('2020-7-11',interval 1440 minute);
++--------------------------------------------+
+| date_sub('2020-7-11',interval 1440 minute) |
++--------------------------------------------+
+| 2020-07-10 00:00:00                        |
++--------------------------------------------+
+
+6.计算两个日期之间相差多少天 （若8.29开学 还有多少天开学？）
+MariaDB [scott]> select datediff('2020-7-11','2020-8-29');
++-----------------------------------+
+| datediff('2020-7-11','2020-8-29') |
++-----------------------------------+
+|                               -49 |
++-----------------------------------+
+
+**数据类型为timestamp，再插入数据时，会自动补全年月日时分秒
+  数据类型为date，表示对是年月日，如果使用now()函数进行传值，则会截断，只取年月日
+
+**小案例1：创建一张表，记录生日
+MariaDB [scott]> create table birthday(
+    -> name varchar(20) primary key not null,
+    -> _brithday date not null); 
+	
+ 添加当前日期：
+ MariaDB [scott]> insert into birthday values('小贾',current_date());
+Query OK, 1 row affected (0.00 sec)
+
+MariaDB [scott]> select* from birthday;
++--------+------------+
+| name   | _brithday  |
++--------+------------+
+| 小贾   | 2020-07-11 |
++--------+------------+
+
+**小案例2：创建一个留言表
+MariaDB [scott]> create table msg(
+    -> id int primary key auto_increment,
+    -> content varchar(30) not null comment '内容',
+    -> sendtime timestamp
+    -> );
+
+a.插入数据：
+MariaDB [scott]> insert into msg(id,content) values(1,'踩踩空间');
+Query OK, 1 row affected (0.00 sec)
+
+MariaDB [scott]> insert into msg(content) values('我又来踩踩空间');
+Query OK, 1 row affected (0.00 sec)
+
+MariaDB [scott]> select* from msg;
++----+-----------------------+---------------------+
+| id | content               | sendtime            |
++----+-----------------------+---------------------+
+|  1 | 踩踩空间              | 2020-07-11 12:12:00 |
+|  2 | 我又来踩踩空间        | 2020-07-11 12:12:25 |
++----+-----------------------+---------------------+
+
+（timestamp类型会自0动插入时间戳 ，若sendtime使用datetime，则需要在插入时在对应位置写上now()）
+
+b.显示所有留言时间，发布日期只显示日期 不显示时间：
+MariaDB [scott]> select content,date(sendtime) from msg;
++-----------------------+----------------+
+| content               | date(sendtime) |
++-----------------------+----------------+
+| 踩踩空间              | 2020-07-11     |
+| 我又来踩踩空间        | 2020-07-11     |
++-----------------------+----------------+
+
+c.查询在1分钟之内发布的留言
+
+新插入一条：
+MariaDB [scott]> insert into msg(content) values('我又又来踩踩空间');
+Query OK, 1 row affected (0.00 sec)
+
+查询:
+MariaDB [scott]> select* from msg where date_add(sendtime,interval 1 minute) > now();
++----+--------------------------+---------------------+
+| id | content                  | sendtime            |
++----+--------------------------+---------------------+
+|  3 | 我又又来踩踩空间         | 2020-07-11 12:20:25 |
++----+--------------------------+---------------------+
+
+
+二.字符串函数
+
+charset(str)  返回字符串字符集
+
+concat(string2,[...]) 连接字符串
+
+instr(string,substring) 返回substring在string中出现的位置，没有返回0
+
+ucase(string2) 转换成大写
+
+lcase(string2) 转换成小写
+
+left(string,length) 从string2中左起取length个字符
+
+length(string) string的长度
+
+replace(str,search_str,replace_str) 在str中用replace_str替换search_str
+
+strcmp(string1，string2) 逐字符比较两字符串大小
+
+substring(str,position,[length]) 从str的postion开始，取length个字符
+
+ltrim(string) rtrim(string) trim(string) 去除前空格或后空格
+
+
+案例:
+
+1.获取emp表中的ename列的字符集
+MariaDB [scott]> select charset(ename) from emp;
++----------------+
+| charset(ename) |
++----------------+
+| utf8           |
+| utf8           |
+| utf8           |
++----------------+
+
+2.显示exam_result表中的信息，显示格式:"xxx的语文是xxx分，数学是xxx分，英语是xxx分"
+MariaDB [linux66]> select concat(name,'的语文是',yuwen,'分,数学是',shuxue,'分,
+英语是',yingyu,'分') 分数 from exam_result;
++-----------------------------------------------------------+
+| 分数                                                      |
++-----------------------------------------------------------+
+| 唐三藏的语文是67分,数学是128分,英语是56分                 |
+| 猪悟能的语文是88分,数学是98分,英语是90分                  |
+| 曹孟德的语文是82分,数学是98分,英语是67分                  |
+| 刘玄德的语文是55分,数学是115分,英语是45分                 |
+| 孙权的语文是70分,数学是73分,英语是78分                    |
+| 宋公明的语文是75分,数学是95分,英语是30分                  |
++-----------------------------------------------------------+
+
+3.求exam_result表中学生姓名占用的字节数
+MariaDB [linux66]> select name,length(name) from exam_result; 
++-----------+--------------+
+| name      | length(name) |
++-----------+--------------+
+| 唐三藏    |            9 |
+| 猪悟能    |            9 |
+| 曹孟德    |            9 |
+| 刘玄德    |            9 |
+| 孙权      |            6 |
+| 宋公明    |            9 |
++-----------+--------------+
+
+（length函数返回字符串长度，以字节为单位。如果是多字节字符则计算多个字节数;如果是单字节
+字符则算作一个人字节。比如:字母,数组算作一个字节，中文标识多个字节数（与字符集编码有关））
+
+4.将exam_result表中所有名字中的'德'都替换成'贾'
+MariaDB [linux66]> select replace(name,'德','贾') from exam_result;
++---------------------------+
+| replace(name,'德','贾')   |
++---------------------------+
+| 唐三藏                    |
+| 猪悟能                    |
+| 曹孟贾                    |
+| 刘玄贾                    |
+| 孙权                      |
+| 宋公明                    |
++---------------------------+
+
+5.截取exam_result表中name字段的第1到第2个字符
+MariaDB [linux66]> select substring(name,1,2) from exam_result;
++---------------------+
+| substring(name,1,2) |
++---------------------+
+| 唐三                |
+| 猪悟                |
+| 曹孟                |
+| 刘玄                |
+| 孙权                |
+| 宋公                |
++---------------------+
+
+6.以首字母小的方式显示所有员工姓名
+MariaDB [scott]> select concat(lcase(substring(ename, 1, 1)),substring(ename,2)) from emp;
++----------------------------------------------------------+
+| concat(lcase(substring(ename, 1, 1)),substring(ename,2)) |
++----------------------------------------------------------+
+| sMITH                                                    |
+| aLLEN                                                    |
+| wARD                                                     |
++----------------------------------------------------------+
+
+三.数学函数
+
+abs(number) 绝对值函数
+bin(deciaml_number) 十进制转换二进制
+hex(decimalNumver) 转换成十六进制
+conv(number，from_base,to_base)进制转换
+ceiling(number) 向上取整
+floor(number) 向下取整
+format(number,decimal_places) 格式化，保留小数位
+rand（）  返回随机浮点数，范围[0.0，1.0]
+mod(number,denominator) 取模，求余
+
+测试：
+
+1.绝对值
+MariaDB [scott]> select abs(-100.2);
++-------------+
+| abs(-100.2) |
++-------------+
+|       100.2 |
++-------------+
+
+2.向上取整
+MariaDB [linux66]> select ceiling(23.04);
++----------------+
+| ceiling(23.04) |
++----------------+
+|             24 |
++----------------+
+
+3.向下取整
+MariaDB [linux66]> select floor(23.04);
++--------------+
+| floor(23.04) |
++--------------+
+|           23 |
++--------------+
+
+4.保留两位小数(小数四舍五入)
+MariaDB [linux66]> select format(23.3455,2);
++-------------------+
+| format(23.3455,2) |
++-------------------+
+| 23.35             |
++-------------------+
+
+5.产生随机数
+MariaDB [linux66]> select rand();
++---------------------+
+| rand()              |
++---------------------+
+| 0.28771621108773743 |
++---------------------+
+
+6.将exam_result表中的数学成绩分别用2进制和16进制表示
+
+二进制:
+MariaDB [linux66]> select name,bin(shuxue) _shuxue from exam_result; 
++-----------+----------+
+| name      | _shuxue  |
++-----------+----------+
+| 唐三藏    | 10000000 |
+| 猪悟能    | 1100010  |
+| 曹孟德    | 1100010  |
+| 刘玄德    | 1110011  |
+| 孙权      | 1001001  |
+| 宋公明    | 1011111  |
++-----------+----------+
+
+十六进制：
+MariaDB [linux66]> select name,hex(shuxue) _shuxue from exam_result; 
++-----------+---------+
+| name      | _shuxue |
++-----------+---------+
+| 唐三藏    | 80      |
+| 猪悟能    | 62      |
+| 曹孟德    | 62      |
+| 刘玄德    | 73      |
+| 孙权      | 49      |
+| 宋公明    | 5F      |
++-----------+---------+
+
+四.其他函数
+
+1.user() 查询当前用户
+
+MariaDB [linux66]> select user();
++----------------+
+| user()         |
++----------------+
+| root@localhost |
+
+2.md5(str)对一个字符串进行md5摘要，摘要后得到一个32位字符串
+MariaDB [linux66]> select md5('jxy');
++----------------------------------+
+| md5('jxy')                       |
++----------------------------------+
+| 58979a089d22c9f9126bdcb68eb643c1 |
++----------------------------------+
+
+3.database()显示当前正在使用的数据库
+MariaDB [linux66]> select database();
++------------+
+| database() |
++------------+
+|  jxy       |
++------------+
+
+4.password(),MYSQL数据库使用该函数对用户加密
+MariaDB [linux66]> select password('root');
++-------------------------------------------+
+| password('root')                          |
++-------------------------------------------+
+| *81F5E21E35407D884A6CD4A731AEBFB6AF209E1B |
++-------------------------------------------+
+
+5.ifnull(val1,val2) 如果val1为null返回val2，否则返回val1
+
+MariaDB [linux66]> select ifnull ('ab','12');
++--------------------+
+| ifnull ('ab','12') |
++--------------------+
+| ab                 |
++--------------------+
+
+MariaDB [linux66]> select ifnull ('ab',null);
++--------------------+
+| ifnull ('ab',null) |
++--------------------+
+| ab                 |
++--------------------+
+
+MariaDB [linux66]> select ifnull (null,'12');
++--------------------+
+| ifnull (null,'12') |
++--------------------+
+| 12                 |
++--------------------+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
