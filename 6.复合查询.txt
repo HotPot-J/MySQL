@@ -1,0 +1,377 @@
+1.多表查询
+	实际开发中往往数据来自不同的表，所以需要多表查询。
+	
+例子：
+a.显示雇员名、雇员工资以及所在部门的名字。（雇员名字和工资在emp表中，部门名字在
+dept表中）
+
+MariaDB [scott]> select ename,sal,dname 
+                 from emp,dept 
+				 where emp.deptno <=> dept.deptno;
++--------+---------+------------+
+| ename  | sal     | dname      |
++--------+---------+------------+
+| SMITH  |  800.00 | RESEARCH   |
+| ALLEN  | 1600.00 | SALES      |
+| WARD   | 1250.00 | SALES      |
+| JONES  | 2975.00 | RESEARCH   |
+| MARTIN | 1250.00 | SALES      |
+| BLAKE  | 2850.00 | SALES      |
+| CLARK  | 2450.00 | ACCOUNTING |
+| SCOTT  | 3000.00 | RESEARCH   |
+| KING   | 5000.00 | ACCOUNTING |
+| TURNER | 1500.00 | SALES      |
+| ADAMS  | 1100.00 | RESEARCH   |
+| JAMES  |  950.00 | SALES      |
+| FORD   | 3000.00 | RESEARCH   |
+| MILLER | 1300.00 | ACCOUNTING |
++--------+---------+------------+
+
+解析： ename sal在emp表中 dname在dept表中
+	  而deptno为dept中的主键 为emp表中的外键
+	  dept和emp中的deptno是对应的 所以有emp.deptno <=> dept.deptno
+	  
+b.显示部门号为10的部门名，员工名和工资
+MariaDB [scott]> select dept.deptno,dname,ename,sal 
+				from emp,dept 
+				where (emp.deptno<=> dept.deptno)and(dept.deptno<=>10) ;
++--------+------------+--------+---------+
+| deptno | dname      | ename  | sal     |
++--------+------------+--------+---------+
+|     10 | ACCOUNTING | CLARK  | 2450.00 |
+|     10 | ACCOUNTING | KING   | 5000.00 |
+|     10 | ACCOUNTING | MILLER | 1300.00 |
++--------+------------+--------+---------+
+
+c.显示各个员工姓名、工资、及工资级别（按照等级升序排列）
+MariaDB [scott]> select ename,sal,grade from emp,salgrade
+				where emp.sal between losal and hisal
+				order by grade;
++--------+---------+-------+
+| ename  | sal     | grade |
++--------+---------+-------+
+| ADAMS  | 1100.00 |     1 |
+| SMITH  |  800.00 |     1 |
+| JAMES  |  950.00 |     1 |
+| MARTIN | 1250.00 |     2 |
+| WARD   | 1250.00 |     2 |
+| MILLER | 1300.00 |     2 |
+| ALLEN  | 1600.00 |     3 |
+| TURNER | 1500.00 |     3 |
+| BLAKE  | 2850.00 |     4 |
+| CLARK  | 2450.00 |     4 |
+| FORD   | 3000.00 |     4 |
+| SCOTT  | 3000.00 |     4 |
+| JONES  | 2975.00 |     4 |
+| KING   | 5000.00 |     5 |
++--------+---------+-------+
+
+2.自连接
+	自连接是指在同一张表连接查询
+	
+例子:
+	a.显示员工FORO的上级领导的编号和姓名
+	
+	（1）使用子查询:
+MariaDB [scott]> select empno,ename
+				from emp 
+				where emp.empno<=>(select mgr from emp where ename='FORD');
++--------+-------+
+| empno  | ename |
++--------+-------+
+| 007566 | JONES |
++--------+-------+
+
+3.子查询：
+		子查询是指嵌入在其他sql语句中的select语句，也叫嵌套查询
+	
+	3.1单行子查询
+		只返回单列，单行数据
+		
+		例子:
+		a.显示SMITH同一部门的员工
+MariaDB [scott]> select* from emp where deptno<=>  (select deptno from emp where ename<=>'SMITH');
++--------+-------+---------+------+---------------------+---------+------+--------+
+| empno  | ename | job     | mgr  | hiredate            | sal     | comm | deptno |
++--------+-------+---------+------+---------------------+---------+------+--------+
+| 007369 | SMITH | CLERK   | 7902 | 1980-12-17 00:00:00 |  800.00 | NULL |     20 |
+| 007566 | JONES | MANAGER | 7839 | 1981-04-02 00:00:00 | 2975.00 | NULL |     20 |
+| 007788 | SCOTT | ANALYST | 7566 | 1987-04-19 00:00:00 | 3000.00 | NULL |     20 |
+| 007876 | ADAMS | CLERK   | 7788 | 1987-05-23 00:00:00 | 1100.00 | NULL |     20 |
+| 007902 | FORD  | ANALYST | 7566 | 1981-12-03 00:00:00 | 3000.00 | NULL |     20 |
++--------+-------+---------+------+---------------------+---------+------+--------+
+
+
+	3.2多行子查询
+		返回多行记录的子查询
+	
+		例子:
+		
+		a.in关键字；查询和10号部门的工作相同的雇员的名字，岗位，工资，部门号，但是不包含10自己的
+	
+MariaDB [scott]> select ename,job,sal,empno,deptno from emp 
+				where job in (select distinct job from emp where deptno<=>10)
+				and deptno<>10;
++-------+---------+---------+--------+--------+
+| ename | job     | sal     | empno  | deptno |
++-------+---------+---------+--------+--------+
+| SMITH | CLERK   |  800.00 | 007369 |     20 |
+| JONES | MANAGER | 2975.00 | 007566 |     20 |
+| BLAKE | MANAGER | 2850.00 | 007698 |     30 |
+| ADAMS | CLERK   | 1100.00 | 007876 |     20 |
+| JAMES | CLERK   |  950.00 | 007900 |     30 |
++-------+---------+---------+--------+--------+
+
+个人理解：in关键字类似与求其子集
+
+		b.all关键字；显示工资比部门30所有的员工的工资高的员工姓名，工资和部门号
+MariaDB [scott]> select ename,sal,deptno from emp  
+				where sal > all (select sal from emp where deptno<=>'30');
+							
++-------+---------+--------+
+| ename | sal     | deptno |
++-------+---------+--------+
+| JONES | 2975.00 |     20 |
+| SCOTT | 3000.00 |     20 |
+| KING  | 5000.00 |     10 |
+| FORD  | 3000.00 |     20 |
++-------+---------+--------+
+
+个人理解：> all   <all 类似于求其部分补集
+	
+		c.any关键字；显示工资比部门30的任意员工的工资高的员工姓名、工资和部门号
+		
+		分步：
+
+1.先求出最小值
+MariaDB [scott]> select ename,sal,deptno from emp  where sal <  all (select sal from emp where deptno<=>'30');
++-------+--------+--------+
+| ename | sal    | deptno |
++-------+--------+--------+
+| SMITH | 800.00 |     20 |
++-------+--------+--------+
+2.再过滤：
+MariaDB [scott]> select ename,sal,deptno from emp where sal >'950';
++--------+---------+--------+
+| ename  | sal     | deptno |
++--------+---------+--------+
+| ALLEN  | 1600.00 |     30 |
+| WARD   | 1250.00 |     30 |
+| JONES  | 2975.00 |     20 |
+| MARTIN | 1250.00 |     30 |
+| BLAKE  | 2850.00 |     30 |
+| CLARK  | 2450.00 |     10 |
+| SCOTT  | 3000.00 |     20 |
+| KING   | 5000.00 |     10 |
+| TURNER | 1500.00 |     30 |
+| ADAMS  | 1100.00 |     20 |
+| FORD   | 3000.00 |     20 |
+| MILLER | 1300.00 |     10 |
++--------+---------+--------+
+
+		使用all一步到位:
+MariaDB [scott]> select ename,sal,deptno from emp 
+                 where sal > any(select sal from emp where deptno = '30');
++--------+---------+--------+
+| ename  | sal     | deptno |
++--------+---------+--------+
+| ALLEN  | 1600.00 |     30 |
+| WARD   | 1250.00 |     30 |
+| JONES  | 2975.00 |     20 |
+| MARTIN | 1250.00 |     30 |
+| BLAKE  | 2850.00 |     30 |
+| CLARK  | 2450.00 |     10 |
+| SCOTT  | 3000.00 |     20 |
+| KING   | 5000.00 |     10 |
+| TURNER | 1500.00 |     30 |
+| ADAMS  | 1100.00 |     20 |
+| FORD   | 3000.00 |     20 |
+| MILLER | 1300.00 |     10 |
++--------+---------+--------+
+	
+	3.3多列子查询
+		单行子查询是指子查询只返回单列。单行数据；多行子查询是指返回单列多行数据（一个范围
+		内的多行数据）都是针对单列而言的。而多列子查询则是指查询返回多个列数据的子查询语句
+		
+		例子:
+			a.查询和SMITH的部门和岗位完全相同的所有雇员，不含SMITH本人
+MariaDB [scott]> select ename from emp 
+		where (deptno,job)<=> (select deptno,job from emp where ename<=>'SMITH')and ename<>'SMITH';
++-------+
+| ename |
++-------+
+| ADAMS |
++-------+
+
+
+4.在from子句中使用子查询
+	子查询语句出现在from子句中。这里要用到数据查询的技巧，把一个子查询当作一个临时表使用。
+	
+	
+	 例子:
+		a.显示高于自己部门平均工资的员工的姓名、部门、工资、平均工资
+	
+		先要知道每个部门的平均工资：
+MariaDB [scott]> select deptno dt,avg(sal) avg_sal from emp group by deptno;
++------+-------------+
+| dt   | avg_sal     |
++------+-------------+
+|   10 | 2916.666667 |
+|   20 | 2175.000000 |
+|   30 | 1566.666667 |
++------+-------------+
+
+将这样一个子查询结果当成一个临时表使用：
+MariaDB [scott]> select ename,deptno,sal,avg_sal
+   from emp,(select deptno dt,avg(sal) avg_sal from emp group by deptno) tmp
+   where emp.sal>tmp.avg_sal and emp.deptno<=>tmp.dt;
++-------+--------+---------+-------------+
+| ename | deptno | sal     | avg_sal     |
++-------+--------+---------+-------------+
+| ALLEN |     30 | 1600.00 | 1566.666667 |
+| JONES |     20 | 2975.00 | 2175.000000 |
+| BLAKE |     30 | 2850.00 | 1566.666667 |
+| SCOTT |     20 | 3000.00 | 2175.000000 |
+| KING  |     10 | 5000.00 | 2916.666667 |
+| FORD  |     20 | 3000.00 | 2175.000000 |
++-------+--------+---------+-------------+
+
+将子查询表起了别名tmp 以及平均工资和tmp中的deptno都起了别名 作为临时表及表中数据列名使用
+
+		b.查找每个部门工资最高的人的姓名、工资、部门、最高工资
+		
+		每个部门的最高工资表：
+MariaDB [scott]> select deptno dt,max(sal) max_sal from emp group by deptno;
++------+---------+
+| dt   | max_sal |
++------+---------+
+|   10 | 5000.00 |
+|   20 | 3000.00 |
+|   30 | 2850.00 |
++------+---------+
+
+用上表作为临时表：
+
+MariaDB [scott]> select ename,sal,deptno,max_sal 
+   from emp,(select deptno dt,max(sal) max_sal from emp group by deptno) tmp 
+   where emp.sal<=>max_sal and emp.deptno<=>tmp.dt;
++-------+---------+--------+---------+
+| ename | sal     | deptno | max_sal |
++-------+---------+--------+---------+
+| BLAKE | 285w0.00 |     30 | 2850.00 |
+| SCOTT | 3000.00 |     20 | 3000.00 |
+| KING  | 5000.00 |     10 | 5000.00 |
+| FORD  | 3000.00 |     20 | 3000.00 |
++-------+---------+--------+---------+
+	
+	   c.显示每个部门的信息(部门名，编号，地址)和人员数量
+	   
+	   （1）方法1 ：使用多表
+	   
+MariaDB [scott]> select dept.deptno,dept.dname,dept.loc,count(*) '部门人数' from emp,dept where  emp.deptno<=>dept.deptno group by dept.deptno;
++--------+------------+----------+--------------+
+| deptno | dname      | loc      | 部门人数     |
++--------+------------+----------+--------------+
+|     10 | ACCOUNTING | NEW YORK |            3 |
+|     20 | RESEARCH   | DALLAS   |            5 |
+|     30 | SALES      | CHICAGO  |            6 |
++--------+------------+----------+--------------+
+
+		（2） 方法2： 使用子查询
+		
+		先统计出每个部门的人员总数
+MariaDB [scott]> select deptno dt,count(ename) '部门人数' from emp group by deptno;
++------+--------------+
+| dt   | 部门人数     |
++------+--------------+
+|   10 |            3 |
+|   20 |            5 |
+|   30 |            6 |
++------+--------------+
+
+用上表作为临时表：
+MariaDB [scott]> select deptno, dname,loc,count_man '部门人数' from
+    dept,(select deptno dt,count(ename) count_man from emp group by deptno) tmp 
+	where dept.deptno<=>tmp.dt; 
++--------+------------+----------+--------------+
+| deptno | dname      | loc      | 部门人数     |
++--------+------------+----------+--------------+
+|     10 | ACCOUNTING | NEW YORK |            3 |
+|     20 | RESEARCH   | DALLAS   |            5 |
+|     30 | SALES      | CHICAGO  |            6 |
++--------+------------+----------+--------------+
+
+
+5.合并查询
+	在实际应用中，为了合并多个select的执行结果，可用使用集合操作符 union 、union all
+
+	5.1 union
+		该操作符用于取的两个结果的并集。当使用该操作符时，会自动去掉结果集中的重复行
+		
+		例子:
+			a.将工资大于2500或者职位是MANAGER的人找出来
+			
+			工资大于25000：
+MariaDB [scott]> select ename, sal, job from emp where sal>2500;
++-------+---------+-----------+
+| ename | sal     | job       |
++-------+---------+-----------+
+| JONES | 2975.00 | MANAGER   |
+| BLAKE | 2850.00 | MANAGER   |
+| SCOTT | 3000.00 | ANALYST   |
+| KING  | 5000.00 | PRESIDENT |
+| FORD  | 3000.00 | ANALYST   |
++-------+---------+-----------+
+
+			职位为manager：
+MariaDB [scott]> select ename, sal, job from emp where job='MANAGER';
++-------+---------+---------+
+| ename | sal     | job     |
++-------+---------+---------+
+| JONES | 2975.00 | MANAGER |
+| BLAKE | 2850.00 | MANAGER |
+| CLARK | 2450.00 | MANAGER |
++-------+---------+---------+
+
+			使用union求并集以后:
+			
+MariaDB [scott]> select ename, sal, job from emp
+			where sal>2500 union select ename, sal, job from emp where job='MANAGER';
++-------+---------+-----------+
+| ename | sal     | job       |
++-------+---------+-----------+
+| JONES | 2975.00 | MANAGER   |
+| BLAKE | 2850.00 | MANAGER   |
+| SCOTT | 3000.00 | ANALYST   |
+| KING  | 5000.00 | PRESIDENT |
+| FORD  | 3000.00 | ANALYST   |
+| CLARK | 2450.00 | MANAGER   |
++-------+---------+-----------+
+		
+		
+		5.2 union all
+			该操作符用于取得两个结果集的并集。但不会去重
+MariaDB [scott]> select ename, sal, job from emp where sal>2500 union all select ename, sal, job from emp where job='MANAGER';
++-------+---------+-----------+
+| ename | sal     | job       |
++-------+---------+-----------+
+| JONES | 2975.00 | MANAGER   |
+| BLAKE | 2850.00 | MANAGER   |
+| SCOTT | 3000.00 | ANALYST   |
+| KING  | 5000.00 | PRESIDENT |
+| FORD  | 3000.00 | ANALYST   |
+| JONES | 2975.00 | MANAGER   |
+| BLAKE | 2850.00 | MANAGER   |
+| CLARK | 2450.00 | MANAGER   |
++-------+---------+-----------+
+
+			
+			
+		
+		
+		
+		
+		
+		
+		
+		
