@@ -1,0 +1,83 @@
+
+
+1.内连接:
+	内连接实际上就是利用where子句对两种表形成笛卡尔积进行筛选，前几天学的查询都是内连接，也是
+	比较常用的一些连接查询：
+		select 字段 from 表 inner join 表2 on 连接条件 and 其他条件
+		
+	例如：
+		显示smith的名字和部门名称
+以前的语法:
+MariaDB [scott]> select ename,dname from emp,dept 
+where emp.deptno <=> dept.deptno and ename<=>'SMITH';
++-------+----------+
+| ename | dname    |
++-------+----------+
+| SMITH | RESEARCH |
++-------+----------+
+
+标准内连接语法：
+MariaDB [scott]> select ename,dname 
+from emp inner join dept on emp.deptno<=>dept.deptno and ename<=> 'SMITH';
++-------+----------+
+| ename | dname    |
++-------+----------+
+| SMITH | RESEARCH |
++-------+----------+
+
+2.外连接：
+	外连接分为左外连接和右外连接
+	
+	2.1左外连接:
+		如果联合查询，左侧的表完全显示我们就说是左外连接。
+		语法：
+			select 字段名 from 表名1 left join 表名2 on 连接条件
+			
+		例子:
+如下是测试表（这两个表并不完全一一对应）:
+MariaDB [jxy]> select* from stu;
++------+------+
+| id   | name |
++------+------+
+|    1 | jack |
+|    2 | tom  |
+|    3 | kity |
+|    4 | nono |
++------+------+
+MariaDB [jxy]> select* from exam;
++------+-------+
+| id   | grade |
++------+-------+
+|    1 |    56 |
+|    2 |    76 |
+|   11 |     8 |
++------+-------+
+
+*查询所有学生的成绩，如果这个学生没有成绩，也要将学生的个人信息显示出来
+
+MariaDB [jxy]> select* from stu left join exam on stu.id<=>exam.id;
++------+------+------+-------+
+| id   | name | id   | grade |
++------+------+------+-------+
+|    1 | jack |    1 |    56 |
+|    2 | tom  |    2 |    76 |
+|    3 | kity | NULL |  NULL |
+|    4 | nono | NULL |  NULL |
++------+------+------+-------+
+4 rows in set (0.00 sec)
+
+	2.2右外连接:
+		如果联合查询，右侧的表完全显示出来我们就说是右外连接
+
+例子:
+*对stu和exam表联合查询，把所有成绩都显示出来，即使这个成绩没有学生与之对应，也要显示出来
+
+MariaDB [jxy]> select* from stu right join exam on stu.id <=> exam.id;
++------+------+------+-------+
+| id   | name | id   | grade |
++------+------+------+-------+
+|    1 | jack |    1 |    56 |
+|    2 | tom  |    2 |    76 |
+| NULL | NULL |   11 |     8 |
++------+------+------+-------+
+
