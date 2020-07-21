@@ -1,0 +1,124 @@
+
+1.索引特性:
+	索引：提高数据库性能，只要执行正确的create index 查询速度就可能提高很多。查询速度的提升
+	是以插入、更新、删除的速度为代价的，这些写操作增加了大量IO，是一种以空间换时间的操作。
+	常见索引分为:
+		*主键索引（primary）
+		*唯一索引（unique）
+		*普通索引（index）
+		*全文索引（fulltext）
+		
+**基本原理:
+	*当添加索引后，索引会形成一颗二叉树，这种二分查找的思想，时间复杂度不过是logN
+	*占用从盘空间
+	*当添加一条记录，不仅会添加到表中，还要维护二叉树，速度有影响，但是不大
+	*当我们添加一个索引，不能够解决所有查询问题，需要分别给字段建立索引;
+	*索引是以空间换时间
+	
+2.创建索引：
+	
+	2.1创建主键索引：
+		
+		方式一: 在创建表的时候，直接在字段名后指定primary key
+		create table user1（id int primary key,name varchar(20));
+		
+		方式二：在创建表的最后，指定某列或某几列为主键索引（我个人认为这样的方式更清晰明了）
+		create table user2(id int,name varchar(20),primary(id));
+		
+		方式三:分步进行，创建表后再添加主键
+		create table user3(id int,name varchar(20));
+		alter table user3 add primary key(id);
+	
+	主键索引的特点：
+		(1)一个表中，最多有一个主键索引，当然可以是复合主键
+		(2)主键索引的效率比较高(主键不可重复)
+		(3)创建主键索引的列，它的值不能为null,且不能重复
+		(4)主键索引的列基本上都是int
+		
+(鉴于第二种方式比较清晰，接下来的唯一索引和普通索引创建我均只写方式二一种)
+
+	2.2创建唯一索引
+	
+	    在创建表的最后，指定某列或某几列为unique
+		create table user4(id int,name varchar(20),unique(id));
+		
+	唯一索引的特点：
+		(1)一个表中可以有多个唯一索引
+		(2)查询效率高
+		(3)如果某一列建议唯一索引，必须保证哲别不能有重复数据
+		(4)如果一个唯一索引上指定not null，等价于主键索引
+		
+	2.3创建普通索引
+		
+		在表的定义最后，指定某列为索引
+		create table user5(id int,name varchar(20),index(name));
+		
+	普通索引的特点：
+		(1)一个表中可以有多个普通索引，普通索引在实际开发中用的比较多
+		(2)如果某列需要创建索引，但是该列有重复的值，那么我们就应该使用普通索引
+		
+	2.4全文索引的创建
+	
+	当对文章字段或有大量文字的字段进行检索时，会使用到全文索引。MySQL提供全文索引机制，
+	但是有要求，要求表的存储引擎必须是MyISAM，而且默认的全文索引支持英文，不支持中文。
+	如果对中文进行全文检索，可以使用sphinx的中文版(coreseek)。
+	
+	CREATE TABLE articles ( 
+	 id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	 title VARCHAR(200), 
+	 body TEXT, 
+	 FULLTEXT (title,body) 
+	)engine=MyISAM;
+		
+	
+	5.查询索引：
+		
+		第一种方法：show keys from 表名
+		mysql> show keys from goods\G 
+		*********** 1. row *********** 
+	      Table: goods <== 表名
+		  Non_unique: 0 <== 0表示唯一索引 
+		  Key_name: PRIMARY <== 主键索引 
+		  Seq_in_index: 1 
+		  Column_name: goods_id <== 索引在哪列 
+		  Collation: A 
+		  Cardinality: 0 
+		  Sub_part: NULL 
+		  Packed: NULL 
+		  Null: 
+		Index_type: BTREE <==以二叉树形式的索引 
+		Comment: 
+	 1 row in set (0.00 sec)
+		
+		方法二：show index from 表名;
+		
+		方法三（信息简略）: desc 表名;
+	
+	4.删除索引：
+		
+		4.1 删除主键索引：alter table 表名 drop primary key;
+		
+		4.2 删除其他索引：alter table 表名 drop index 索引名;
+	    alter table user drop index name;
+		 
+		4.3 drop index 索引名 on 表名;
+		drop index name on user8;
+		
+		
+	5.索引创建原则：
+		
+		（1）比较频繁作为查询条件的字段应该创建索引
+		（2）唯一性太差的字段不适合单独创建索引，即使频繁作为查询条件
+		（3）更新非常频繁的字段不适合创建索引
+		（4）不会出现在where子句种的字段不该创建索引
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
