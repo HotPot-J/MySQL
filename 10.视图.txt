@@ -1,0 +1,117 @@
+
+1.视图
+	视图是一个虚拟表，其内容由查询定义。同真实的表一样，视图包含一系列带有名称的列和行和行数据。
+	视图的数据变化会影响到基表，基表的数据变化也会影响到视图。
+	
+1.1基本使用：
+	
+	1.1.1创建视图：
+		create view 视图名 as select 语句;
+		
+	修改视图，对基表数据有影响
+	修改基表对基表数据有影响
+	
+例子:
+
+创建视图:
+MariaDB [scott]> create view v_ename_dname as 
+     select ename,dname from emp,dept where emp.deptno<=>dept.deptno;
+	 Query OK, 0 rows affected (0.00 sec)
+	 
+查询视图:
+MariaDB [scott]> select* from v_ename_dname;
++--------+------------+
+| ename  | dname      |
++--------+------------+
+| SMITH  | RESEARCH   |
+| ALLEN  | SALES      |
+| WARD   | SALES      |
+| JONES  | RESEARCH   |
+| MARTIN | SALES      |
+| BLAKE  | SALES      |
+| CLARK  | ACCOUNTING |
+| SCOTT  | RESEARCH   |
+| KING   | ACCOUNTING |
+| TURNER | SALES      |
+| ADAMS  | RESEARCH   |
+| JAMES  | SALES      |
+| FORD   | RESEARCH   |
+| MILLER | ACCOUNTING |
++--------+------------+
+14 rows in set (0.00 sec)
+
+修改视图:
+MariaDB [scott]> update v_ename_dname set dname = 'jxy' where ename <=> 'KING';
+Query OK, 1 row affected (0.00 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+
+查询emp表:
+MariaDB [scott]> select ename,dname from emp,dept where emp.deptno<=>dept.deptno and emp.ename<=>'KING';
++-------+-------+
+| ename | dname |
++-------+-------+
+| KING  | jxy   |
++-------+-------+
+(基表已经被改变)
+
+
+修改基表:
+MariaDB [scott]> update dept set dname = 'sales' where dname <=> 'jxy';  
+Query OK, 1 row affected (0.34 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+
+查看视图：
+MariaDB [scott]> select* from v_ename_dname where ename<=>'KING';
++-------+-------+
+| ename | dname |
++-------+-------+
+| KING  | sales |
++-------+-------+
+1 row in set (0.00 sec)
+(视图中的数据也发生了变化)
+
+      1.1.2 删除视图：
+	  drop view;
+	  
+例子:
+
+展示当前表：
+MariaDB [scott]> show tables;
++-----------------+
+| Tables_in_scott |
++-----------------+
+| dept            |
+| emp             |
+| msg             |
+| salgrade        |
+| v_ename_dname   |  《------视图
++-----------------+
+5 rows in set (0.00 sec)
+
+执行删除:
+MariaDB [scott]> drop view v_ename_dname;
+Query OK, 0 rows affected (0.00 sec)
+
+查看:
+MariaDB [scott]> show tables;
++-----------------+
+| Tables_in_scott |
++-----------------+
+| dept            |
+| emp             |
+| msg             |
+| salgrade        |
++-----------------+
+4 rows in set (0.00 sec)
+(成功删除)
+
+2.视图的规则和限制：
+	*与表一样，必须唯一命名(不能出现同名视图或表名)
+	*创建视图数目无限制，但要考虑复杂查询创建为视图之后的性能影响
+	*视图不能添加索引，也不能有关联的触发器或默认值
+	*视图可以提高安全性，必须有足够的访问权限
+	*order by可以用在视图中，但是如果从该视图检索数据select中也含有order by，那么该视图中的
+	*order by将被覆盖
+	*视图可以和表一起使用
+
+	
