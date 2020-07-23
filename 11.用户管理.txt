@@ -1,0 +1,88 @@
+
+1、用户管理
+
+	如果我们只能使用root用户，会存在安全隐患，所以MySQL的用户管理就发挥了作用
+	
+1.1 用户
+	1.1.1用户信息：
+	mysql中的用户都存储在系统数据库mysql的user表中。
+	select host,user,authentication_string from user;
+	
+MariaDB [mysql]> select host,user,authentication_string from user;
++-----------+------+-----------------------+
+| host      | user | authentication_string |
++-----------+------+-----------------------+
+| localhost | root |                       | 
+| bogon     | root |                       |
+| 127.0.0.1 | root |                       |  
+| ::1       | root |                       |
+| localhost |      |                       |
+| bogon     |      |                       |
++-----------+------+-----------------------+
+6 rows in set (0.00 sec)
+
+字段解释：
+host：表示这个用户可以从哪个主机登陆，如果是localhost，表示只能从本机登陆
+user：用户名
+authentication_string：用户密码通过password函数加密后的
+
+	1.1.2创建用户:
+		create user '用户名'@'登陆主机/ip' identified by '密码';
+		
+	1.1.3删除用户：
+		drop user '用户名'@'主机名'
+		
+例子:
+mysql> drop user 'jxy';
+ ERROR 1396 (HY000): Operation DROP USER failed for 'jxy'@'%' <= 直接给个用户名，不能删 除，
+																	它默认是%，表示所有地方可以登陆
+																	的用户 
+										
+mysql> drop user 'jxy'@'localhost'; 
+Query OK, 0 rows affected (0.00 sec)
+
+	1.1.4修改用户密码
+		
+		自己修改自己密码：
+			set password = password('新密码');
+			
+		root修改指定用户的密码：
+			set password for '用户名'@'主机名'=password('新的密码')；
+			
+			set password for 'jxy'@'localhost'=password('123456');
+		
+2.数据库的权限:
+	mysql数据库提供的有权限表，网上随时可以搜索查阅。这里就不做赘述。
+	
+3.给用户授权:
+	(刚创建的用户没有任何权限，需要给用户授权)
+	
+	语法: grant 权限列表 on 库.对象名 to '用户名'@'登陆位置' [identified by '密码'];
+	
+	库.* : 表示某个数据库中的所有数据对象(表，视图，存储过程等)
+    
+	*.* ：表示所有的数据库中的所有数据对象
+	
+	identified by可选。 如果用户存在，赋予权限的同时修改密码,如果该用户不存在，就是创建用户
+	
+	权限列表:
+		grant select,delete,create,..., on
+		
+		grant all  on <----表示赋予该用户在该对象上的所有权限
+		
+例子: root 给 jxy 赋予账户查询scott库的emp表的权限
+	
+	mysql> grant select on scott.emp to 'jxy'@'localhost';
+	
+ 3.1若发现赋权后，未生效，执行：flush privileges;
+ 
+ 
+ 3.2回收权限：
+	revoke 权限列表 on 库.对象名 from '用户名'@'登陆位置';
+ 
+ 
+ 
+ 
+ 
+ 
+ 
